@@ -129,7 +129,10 @@ export default function Home() {
     // });
     // console.log(await response.json());
 
-    const t = [0b01100100, 0b01101001, 0b01100110, 0b01100110]; //"diff"
+    const t = [0, 0b01100100, 0b01101001, 0b01100110, 0b01100110, 0]; //"diff"
+    const g = [
+      0b01100011, 0b01101000, 0b01100001, 0b01101110, 0b01100111, 0b01100101,
+    ]; //"change"
     // Array buffer approach
     // const a = new ArrayBuffer(800);
     // let aS = new Int8Array(a);
@@ -142,20 +145,18 @@ export default function Home() {
     //diff here after converting newImg and oldImg to arraybuffer
 
     //Buffer approach
-    const a = Buffer.alloc(200, 0b01100001);
-    let b = Buffer.alloc(150, 0b01100001);
-    console.log(a.length);
+    const a = Buffer.alloc(1000, "a");
+    //a.set(g, 50);
+    let b = Buffer.from(a);
     b.set(t, 100);
-    diff({
+    const p = await diff({
       oldD: a,
       oldLength: a.length,
       newD: b,
       newLength: b.length,
-    }).then((value) => {
-      if (value == -1) return -1;
-      console.log(value.byteLength);
-      console.log(value);
     });
+    console.log(p.byteLength);
+    console.log(p);
   };
   //Rendered wabpage contents/ DOM structure
   return (

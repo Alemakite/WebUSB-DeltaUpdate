@@ -3,7 +3,6 @@ const MAGIC = "BSDIFF40"; //8bytes
 var SnappyJS = require("snappyjs");
 
 ///////////////////////////////////////////////////////////////////
-
 // A helper function that simply converts a number of bytes and
 // returns it in more readable format such as KB or MB.
 //
@@ -21,43 +20,45 @@ function human_bytes(n) {
 // A function that writes a BSDIFF4-format patch to ArrayBuffer obj
 //
 ///////////////////////////////////////////////////////////////////
-async function write_patch({
-  patch,
-  len_dst,
-  controlArrays,
-  bdiff,
-  bextra,
-} = {}) {
+async function write_patch({ controlArrays, bdiff, bextra } = {}) {
   try {
     console.log("writing patch");
-    patch.write(MAGIC, 0, 8); //write patch magic, end offset is 8
-
-    // write control arrays
-    const control_view = Buffer.from(controlArrays);
-    //compress each block, compressFile returns array
-    const bcontrol = SnappyJS.compress(control_view);
+    /*
+      Compress each block, compress() returns either arraybuffer or uint8 when passed in.
+      Control arrays is casted to int8array to facilitate having signed bytes object.
+    */
+    const control_view = new Int8Array(controlArrays.flat());
+    controlArrays = SnappyJS.compress(control_view.buffer);
     bdiff = SnappyJS.compress(bdiff);
     bextra = SnappyJS.compress(bextra);
 
-    //write lengths of control header data
-    patch.write(bcontrol.length, 8); //not sure about the n of bytes to write
-    patch.write(bdiff.length, 16);
-    patch.write(bextra.length, 24);
-    patch.write(len_dst, 32);
+    //initialise a buffer object with length calculated based on control header data sizes
+    const newPatchSize = Number(
+      40 + controlArrays.byteLength + bdiff.byteLength + bextra.byteLength
+    );
+    console.log("newPatch size: ", newPatchSize);
+    let newPatch = Buffer.alloc(newPatchSize);
 
-    const write = [bcontrol, bdiff, bextra];
-    patch.write(write, 40);
+    //write magic for integrity control
+    newPatch.write(MAGIC, 0, 8); //write patch magic, end offset is 8
+    //write lengths of control header data
+    newPatch.write(toString(controlArrays.byteLength), 8); //not sure about the n of bytes to write
+    newPatch.write(toString(bdiff.byteLength), 16);
+    newPatch.write(toString(bextra.byteLength), 24);
+    newPatch.write(toString(newPatchSize), 32);
+    //write diff data
+    newPatch.write(controlArrays + bdiff + bextra, 40);
+
+    return newPatch;
   } catch (Error) {
     console.error(Error);
   }
 }
 
 ///////////////////////////////////////////////////////////////////
-//
 // A function that reads a BSDIFF4 patch from ArrayBuffer object
-//
 ///////////////////////////////////////////////////////////////////
-function read_patch(patch) {
+async function read_patch(patch) {
   try {
     //magic check
     const magic = patch.toString("utf8", 0, 8); //read and decode magic
@@ -103,26 +104,16 @@ function read_patch(patch) {
 ///////////////////////////////////////////////////////////////////
 export async function diff({ oldD, oldLength, newD, newLength } = {}) {
   try {
-    console.log(oldD);
-    console.log(oldLength);
-    do_diff({
-      oldData: oldD,
-      oldDataLength: oldLength,
-      newData: newD,
-      newDataLength: newLength,
-    }).then((delta) => {
-      if (delta == -1) throw new Error(" Diffing error");
-      let newPatch = Buffer.alloc(newLength);
-      write_patch({
-        patch: newPatch,
-        patchLength: newLength,
-        controlArrays: delta[0],
-        bdiff: delta[1],
-        bextra: delta[2],
-      }).then(() => {
-        return newPatch;
-      });
+    //maybe can make the process even faster by passing in an object instead of parameters
+    const delta = await do_diff(oldD, oldLength, newD, newLength);
+    console.log("diff result: ", delta);
+    //Remember to convert delta to arraybuffers for snappyJS to work
+    const patch = await write_patch({
+      controlArrays: delta[0],
+      bdiff: delta[1],
+      bextra: delta[2],
     });
+    return patch;
   } catch (Error) {
     console.error(Error);
     return -1;
