@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useEffect, useState, useRef } from "react";
-import { diff, patch } from "../external/bsdiff4_buffers";
+import { diff, patch, read_patch } from "../external/bsdiff4";
 const { Buffer } = require("buffer");
 //filters so that we don't detect unnecessary usb devices in a system
 const filters = [
@@ -133,18 +133,7 @@ export default function Home() {
     const g = [
       0b01100011, 0b01101000, 0b01100001, 0b01101110, 0b01100111, 0b01100101,
     ]; //"change"
-    // Array buffer approach
-    // const a = new ArrayBuffer(800);
-    // let aS = new Int8Array(a);
-    // aS.fill(0b01100001); //'a'
 
-    // let b = new ArrayBuffer(700);
-    // let bS = new Int8Array(b);
-    // bS.fill(0b01100001); //'a'
-    // bS.set(t, 50);
-    //diff here after converting newImg and oldImg to arraybuffer
-
-    //Buffer approach
     const a = Buffer.alloc(1000, "a");
     //a.set(g, 50);
     let b = Buffer.from(a);
@@ -155,8 +144,11 @@ export default function Home() {
       newD: b,
       newLength: b.length,
     });
-    console.log(p.byteLength);
-    console.log(p);
+    console.log("patch size: ", p.byteLength);
+    console.log("patch: ", p);
+
+    const check = await read_patch(p);
+    console.log("read patch back: ", check);
   };
   //Rendered wabpage contents/ DOM structure
   return (

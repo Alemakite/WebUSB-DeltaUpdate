@@ -1,10 +1,9 @@
+import { Buffer } from "buffer";
 import { do_diff, do_patch } from "./bsdiff4util";
-//import bz2 from "./bzip2/compressjs/lib/Bzip2";
 const MAGIC = "BSDIFF40"; //8bytes
 var SnappyJS = require("snappyjs");
 
 ///////////////////////////////////////////////////////////////////
-
 // A helper function that simply converts a number of bytes and
 // returns it in more readable format such as KB or MB.
 //
@@ -22,83 +21,97 @@ function human_bytes(n) {
 // A function that writes a BSDIFF4-format patch to ArrayBuffer obj
 //
 ///////////////////////////////////////////////////////////////////
-async function write_patch({
-  obj,
-  len_dst,
-  controlArrays,
-  bdiff,
-  bextra,
-} = {}) {
+async function write_patch({ controlArrays, bdiff, bextra } = {}) {
   try {
     console.log("writing patch");
-    let patch_view = new Uint8Array(obj.f_patch);
-    let AsBytes = new TextEncoder(); //Encode in utf-8 format
-    const magic = AsBytes.encode(MAGIC);
-    patch_view.set(magic, 0); //write patch magic, end offset is 8
-
-    // write control arrays
-    const control_view = new Uint8Array(controlArrays);
-    //compress each block, compressFile returns array
-    // var compressjs = require("compressjs");
-    // var algorithm = compressjs.Bzip2;
-    //const bcontrol = algorithm.compressFile(control_view);
-    const bcontrol = SnappyJS.compress(control_view);
+    /*
+      Compress each block, compress() returns either arraybuffer or uint8 when passed in.
+      Control arrays is casted to int8array to facilitate having signed bytes object.
+    */
+    const control_view = new Int8Array(controlArrays.flat());
+    console.log("control buffer 1: ", control_view.buffer);
+    controlArrays = SnappyJS.compress(control_view.buffer);
     bdiff = SnappyJS.compress(bdiff);
     bextra = SnappyJS.compress(bextra);
+    //initialise a buffer object with length calculated based on control header data sizes
+    // const newPatchSize =
+    //   40 +
+    //   parseInt(controlArrays.byteLength) +
+    //   parseInt(bdiff.byteLength) +
+    //   parseInt(bextra.byteLength);
+    // console.log("newPatch size: ", newPatchSize);
+    let newPatchControl = Buffer.alloc(32);
+    //write magic number for integrity control
+    newPatchControl.write(MAGIC, 0, 8);
+    //write lengths of control header data, giving each 8 bytes of space
+    newPatchControl.write(controlArrays.byteLength.toString(), 8); //not sure about the n of bytes to write
+    newPatchControl.write(bdiff.byteLength.toString(), 16);
+    newPatchControl.write(bextra.byteLength.toString(), 24);
+    //newPatchControl.write(newPatchSize.toString(), 32);
 
-    //write lengths of control header data
-    patch_view.set(AsBytes.encode(bcontrol.length), 8);
-    patch_view.set(AsBytes.encode(bdiff.length), 16);
-    patch_view.set(AsBytes.encode(bextra.length), 24);
-    patch_view.set(AsBytes.encode(len_dst), 32);
+    //combining control&diff data
+    const Views2Write = Buffer.concat([
+      new Uint8Array(controlArrays),
+      new Uint8Array(bdiff),
+      new Uint8Array(bextra),
+    ]);
+    const pack = [newPatchControl, Views2Write];
 
-    const write = [bcontrol, bdiff, bextra];
-    patch_view.set(write, 40);
+    return Buffer.concat(pack);
   } catch (Error) {
     console.error(Error);
   }
 }
 
 ///////////////////////////////////////////////////////////////////
-//
 // A function that reads a BSDIFF4 patch from ArrayBuffer object
-//
 ///////////////////////////////////////////////////////////////////
-function read_patch(f_patch) {
+export async function read_patch(patch) {
   try {
     //magic check
-    const magic = new Uint8Array(f_patch, 0, 8);
-    let AsNumber = new TextDecoder();
-    if (AsNumber.decode(magic) != MAGIC) {
-      throw new Error("Bad patch magic");
-    }
-    let patch_view = new Uint8Array(f_patch);
-    let tcontrol;
-
-    // length headers
-    const len_control = AsNumber.decode(patch_view.slice(8, 16));
-    const len_diff = AsNumber.decode(patch_view.slice(16, 24));
-    const len_extra = AsNumber.decode(patch_view.slice(24, 32));
-    const len_dst = AsNumber.decode(patch_view.slice(32, 40));
+    const magic = patch.toString("utf8", 0, 8); //read and decode magic
+    if (magic != MAGIC) throw new Error("Bad patch magic");
+    /* 
+      Length headers, reading and decoding utf8 format data from buffer.
+      Casting read string data to Numbers using parseInt.
+    */
+    const len_control = parseInt(patch.toString("utf8", 8, 16));
+    const len_diff = parseInt(patch.toString("utf8", 16, 24));
+    const len_extra = parseInt(patch.toString("utf8", 24, 32));
+    //const len_dst = parseInt(patch.toString("utf8", 32, 40));
 
     // read the control header
-    const bcontrol = SnappyJS.uncompress(patch_view.slice(40, len_control));
+    const control_offset = 32 + len_control;
+    const control = patch.subarray(32, control_offset);
+
+    let control_uncompressed = SnappyJS.uncompress(control);
+    control_uncompressed = new Int8Array(control_uncompressed);
+
+    console.log("control: ", control);
+    console.log("bcontrol: ", control_uncompressed);
 
     // Python slice notation -> Javascript slice method
     // a[start:stop:step]    -> a[slice(start, stop, step)]  !!!!!
-    for (i in range(0, bcontrol.length, 24)) {
-      tcontrol = [
-        AsNumber.decode(bcontrol.slice(i, i + 8)),
-        AsNumber.decode(bcontrol.slice(i + 8, i + 16)),
-        AsNumber.decode(bcontrol.slice(i + 16, i + 24)),
-      ];
-    }
-
+    // let tcontrol;
+    // console.log("bcontrol length: ", control_uncompressed.length);
+    // for (i in range(0, control_uncompressed.length, 24)) {
+    //   tcontrol = [
+    //     control_uncompressed.toString("utf8", i, i + 8),
+    //     control_uncompressed.toString("utf8", i + 8, i + 16),
+    //     control_uncompressed.toString("utf8", i + 16, i + 24),
+    //   ];
+    // }
+    // console.log("tcontrol: ", tcontrol);
     // read the diff and extra blocks
-    const bdiff = SnappyJS.uncompress(patch_view.slice(len_control, len_diff));
-    const bextra = SnappyJS.uncompress(patch_view.slice(len_diff, len_extra));
 
-    return len_dst, tcontrol, bdiff, bextra;
+    const bdiff_offset = control_offset + len_diff;
+    const bdiff = patch.subarray(control_offset, bdiff_offset);
+    const bextra = patch.subarray(bdiff_offset);
+    let bdiff_uncompressed = SnappyJS.uncompress(bdiff);
+    bdiff_uncompressed = new Int8Array(bdiff_uncompressed);
+    const bextra_uncompressed = SnappyJS.uncompress(bextra);
+
+    return [control_uncompressed, bdiff_uncompressed, bextra_uncompressed];
   } catch (Error) {
     console.error(Error);
   }
@@ -110,33 +123,18 @@ function read_patch(f_patch) {
 // (from src_bytes to dst_bytes) as ArrayBuffer.
 //
 ///////////////////////////////////////////////////////////////////
-export async function diff({
-  arrBuff_old,
-  old_length,
-  arrBuff_new,
-  new_length,
-} = {}) {
+export async function diff({ oldD, oldLength, newD, newLength } = {}) {
   try {
-    let obj_to_save_patch = {
-      f_patch: new ArrayBuffer(new_length), //to pass by ref
-    };
-    const diffed = await do_diff({
-      oldData: arrBuff_old,
-      oldDataLength: old_length,
-      newData: arrBuff_new,
-      newDataLength: new_length,
+    //maybe can make the process even faster by passing in an object instead of parameters
+    const delta = await do_diff(oldD, oldLength, newD, newLength);
+    console.log("diff result: ", delta);
+    //Remember to convert delta to arraybuffers for snappyJS to work
+    const patch = await write_patch({
+      controlArrays: delta[0],
+      bdiff: delta[1],
+      bextra: delta[2],
     });
-    if (diffed == -1) {
-      throw new Error(" Diffing error");
-    }
-    write_patch({
-      obj: obj_to_save_patch,
-      len_dst: new_length,
-      controlArrays: diffed[0],
-      bdiff: diffed[1],
-      bextra: diffed[2],
-    });
-    return obj_to_save_patch.f_patch;
+    return patch;
   } catch (Error) {
     console.error(Error);
     return -1;
@@ -149,6 +147,6 @@ export async function diff({
 // (patch_bytes to src_bytes) and returns the bytes as ArrayBuffer.
 //
 ///////////////////////////////////////////////////////////////////
-export async function patch({ arrBuff_src, arrBuff_patch } = {}) {
-  return do_patch(arrBuff_src, read_patch(arrBuff_patch));
+export async function patch(oldD, patchD) {
+  return do_patch(oldD, read_patch(patchD));
 }
