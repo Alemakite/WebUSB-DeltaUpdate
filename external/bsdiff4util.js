@@ -264,7 +264,7 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
       oldscore = 0;
       //do suffix scan between old and new file
       for (scsc = scan += len; scan < newDataLength; scan++) {
-        console.log("Scanning: ", scan);
+        //console.log("Scanning: ", scan);
         len = search(
           I,
           oldData,
@@ -275,7 +275,7 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
           oldDataLength,
           pos
         );
-        console.log("len from search: %d, pos: %d ", len, pos[0]);
+        //console.log("len from search: %d, pos: %d ", len, pos[0]);
         if (isNaN(len) || isNaN(pos[0]))
           throw new Error("search function error");
         for (; scsc < scan + len; scsc++) {
@@ -296,7 +296,7 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
 
       //if suffix scan completed
       if (len != oldscore || scan == newDataLength) {
-        console.log("hellllo");
+        //console.log("hellllo");
         s = 0;
         Sf = 0;
         lenf = 0;
@@ -359,8 +359,6 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
         dblen += lenf;
         eblen += scan - lenb - (lastscan + lenf);
 
-        console.log("db: ", db);
-        console.log("dblen: ", dblen);
         console.log(
           "scan - lenb - (lastscan + lenf)",
           scan - lenb - (lastscan + lenf)
