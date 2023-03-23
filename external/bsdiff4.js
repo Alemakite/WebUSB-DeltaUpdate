@@ -1,20 +1,10 @@
 import { Buffer } from "buffer";
-import { do_diff, do_patch } from "./bsdiff4util";
+import { do_diff, do_patch } from "./bsdiff4util.js";
 import SnappyJS from "snappyjs";
-
+//const Buffer = require("buffer");
+// const bsdiff4util = require("./bsdiff4util");
+//const SnappyJS = require("snappyjs");
 const MAGIC = "BSDIFF40"; //8bytes
-
-///////////////////////////////////////////////////////////////////
-// A helper function that simply converts a number of bytes and
-// returns it in more readable format such as KB or MB.
-///////////////////////////////////////////////////////////////////
-function human_bytes(n) {
-  //return the number of bytes 'n' in more human readable form
-  if (n < 1024) return "%i B" % n;
-  k = (n - 1) / 1024 + 1;
-  if (k < 1024) return "%i KB" % k;
-  return "%.2f MB" % (float(n) / 2 ** 20);
-}
 
 async function split_array(data, array) {
   let temp = [];
@@ -43,12 +33,9 @@ export async function write_patch({ controlArrays, bdiff, bextra }) {
       Compress each block, compress() returns either arraybuffer or uint8 when passed in.
       Control arrays is casted to int8array to facilitate having signed bytes object.
     */
-
-    let control_buffer = new ArrayBuffer(controlArrays.flat().length * 2);
-    let control_view = new Int16Array(control_buffer);
+    let control_buffer = new ArrayBuffer(controlArrays.flat().length * 4);
+    let control_view = new Int32Array(control_buffer);
     control_view.set(controlArrays.flat());
-    //const control_view = new Uint8Array(controlArrays.flat());
-    console.log("test1: ", control_view);
     controlArrays = SnappyJS.compress(control_view.buffer); //returns array buffer
     bdiff = SnappyJS.compress(bdiff);
     bextra = SnappyJS.compress(bextra);
@@ -87,7 +74,6 @@ export async function write_patch({ controlArrays, bdiff, bextra }) {
 ///////////////////////////////////////////////////////////////////
 export async function read_patch(patch) {
   try {
-    console.log("type: ", patch);
     //magic check
     const magic = patch.toString("utf8", 0, 8); //read and decode magic
     if (magic != MAGIC) throw new Error("Bad patch magic");
@@ -102,12 +88,12 @@ export async function read_patch(patch) {
     // read the control data
     const control_offset = 32 + len_control;
     const control = patch.subarray(32, control_offset);
-    console.log(" control compressed ", control);
+    //console.log(" control compressed ", control); //Each 2 bytes represent a single number, storing int16
     let control_uncompressed = SnappyJS.uncompress(control);
     control_uncompressed = new Int16Array(control_uncompressed.buffer);
     control_uncompressed = [...control_uncompressed]; //convert to array object
 
-    console.log(" control uncompressed ", control_uncompressed);
+    //console.log(" control uncompressed ", control_uncompressed);
     //const control_arrays = await split_array(control_uncompressed, []);
     //console.log("control arrays: ", control_arrays);
 
@@ -117,12 +103,13 @@ export async function read_patch(patch) {
     let bdiff_uncompressed = SnappyJS.uncompress(bdiff);
     const bextra = patch.subarray(bdiff_offset);
     const bextra_uncompressed = SnappyJS.uncompress(bextra);
-
-    return [
+    const result = [
       [control_uncompressed],
       bdiff_uncompressed.buffer,
       bextra_uncompressed.buffer,
     ];
+    console.log("read: ", result);
+    return result;
   } catch (Error) {
     console.error(Error);
   }
@@ -136,7 +123,7 @@ export async function diff({ oldD, oldLength, newD, newLength }) {
   try {
     //maybe can make the process even faster by passing in an object instead of parameters
     const delta = await do_diff(oldD, oldLength, newD, newLength);
-    console.log("diff result: ", delta);
+    console.log("delta: ", delta);
     //Remember to convert delta to arraybuffers for snappyJS to work
     const patch = await write_patch({
       controlArrays: delta[0],
@@ -153,6 +140,7 @@ export async function diff_only({ oldD, oldLength, newD, newLength }) {
   try {
     //maybe can make the process even faster by passing in an object instead of parameters
     const delta = await do_diff(oldD, oldLength, newD, newLength);
+    console.log("delta: ", delta);
     return delta;
   } catch (Error) {
     console.error(Error);

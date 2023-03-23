@@ -1,8 +1,12 @@
 {
   "name": "deltawebsub",
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!@ngrx|(?!deck.gl)|ng-dynamic)"
+    ]
+  },
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -16,7 +20,8 @@
     "buffer": "^6.0.3",
     "next": "13.1.1",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "usb": "^2.9.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.20.2",

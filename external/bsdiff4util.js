@@ -233,16 +233,16 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
       At the oldDataLength + 1 postion held is a "unique sentinel symbol".
       The final state of I will be referred to sorted suffix array.
       Has to be non- */
-    let I = new Int16Array(oldDataLength + 1);
+    let I = new Int32Array(oldDataLength + 1);
 
     /*Array being an inverse permutation of the sorted suffix array I. */
-    let V = new Int16Array(oldDataLength + 1);
+    let V = new Int32Array(oldDataLength + 1);
 
     /* perform suffix sort on original data */
     await qsufsort(I, V, oldData, oldDataLength);
     console.log("old data sorted");
-    console.log("I:", I);
-    console.log("V:", V);
+    //console.log("I:", I);
+    //console.log("V:", V);
 
     /* 
     db(diff blocks) and eb(extra blocks) variables declared as arrays in order to 
@@ -359,14 +359,14 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
         dblen += lenf;
         eblen += scan - lenb - (lastscan + lenf);
 
-        console.log(
-          "scan - lenb - (lastscan + lenf)",
-          scan - lenb - (lastscan + lenf)
-        );
-        console.log(
-          "pos - lenb - (lastpos + lenf)",
-          pos[0] - lenb - (lastpos + lenf)
-        );
+        //console.log(
+        //  "scan - lenb - (lastscan + lenf)",
+        //  scan - lenb - (lastscan + lenf)
+        //);
+        //console.log(
+        //  "pos - lenb - (lastpos + lenf)",
+        //  pos[0] - lenb - (lastpos + lenf)
+        //);
 
         cArray[0] = lenf;
         cArray[1] = scan - lenb - (lastscan + lenf);
@@ -382,7 +382,7 @@ export async function do_diff(oldData, oldDataLength, newData, newDataLength) {
     //prepare results to return
     let results = [0, 0, 0];
     results[0] = controlArrays;
-    const dbBuff = new Uint8Array(db); //facilitating char* cast from og code
+    const dbBuff = new Uint8Array(db); //facilitating char* cast from original code
     results[1] = dbBuff.buffer; // saving the underlying arraybuffer
     const ebBuff = new Uint8Array(eb);
     results[2] = ebBuff.buffer;
