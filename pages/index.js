@@ -231,7 +231,7 @@ export default function Home() {
           marginTop: 30,
         }}
       >
-        <button onClick={() => Do_delta_update()}> Delta Update </button>
+        <button onClick={() => Do_delta_update("1.1")}> Delta Update </button>
         <button>Read Firmware</button>
       </div>
       <h4>
