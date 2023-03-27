@@ -1,9 +1,9 @@
 import Head from "next/head";
 import { useEffect, useState, useRef } from "react";
+//import { webusb } from "usb";
 import React from "react";
 import ReactDOM from "react-dom";
 import notifTable from "./notifTable";
-import { diff, read_patch } from "./../external/bsdiff4";
 const { Buffer } = require("buffer");
 //filters so that we don't detect unnecessary usb devices in a system
 const filters = [
@@ -12,6 +12,7 @@ const filters = [
   { vendorId: 0x8086, productId: 0xf8a1 },
 ];
 let start, end;
+let receiveArr, patch;
 export default function Home() {
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -31,8 +32,8 @@ export default function Home() {
       portRef.current = request;
       console.log(portRef.current);
       Connect();
-    } catch (error) {
-      console.log(error);
+    } catch (Error) {
+      console.error(Error);
     }
   };
   ///////////////////////////////////////////////////////////////////
@@ -42,7 +43,7 @@ export default function Home() {
   ///////////////////////////////////////////////////////////////////
   const Connect = async () => {
     try {
-      //claiming an interface
+      //claiming interface
       await portRef.current.open();
       if (portRef.current.configuration === null)
         await portRef.current.selectConfiguration(1);
@@ -55,10 +56,9 @@ export default function Home() {
       Listen(); //start listening for incoming transfers
     } catch (error) {
       portRef.current.close();
-      console.log(error, "ERROR - failed to claim interface");
+      console.error("ERROR - failed to claim interface");
     }
   };
-
   ///////////////////////////////////////////////////////////////////
   //
   // A function for listening for incoming WebUSB tranfers.
@@ -66,40 +66,59 @@ export default function Home() {
   // incoming transfers. It is in effect a text receiving function.
   //
   ///////////////////////////////////////////////////////////////////
-  let Listen = () => {
+  let Listen = async () => {
     if (!portRef.current) return;
     const endpointIn =
       portRef.current.configuration.interfaces[0].alternate.endpoints[0]
         .endpointNumber;
-    portRef.current.transferIn(endpointIn, 64).then((result) => {
-      //const echo = new TextDecoder().decode(result.data);
-      const echo = result.data;
-      end = performance.now(); //Perfromance testing end
-      console.log(`Full update execution time: ${Math.floor(end - start)} ms`);
-      console.log(echo);
+    portRef.current.transferIn(endpointIn, 256).then((result) => {
+      const echo = new Uint8Array(result.data.buffer);
+      const tmp = new Uint8Array(receiveArr);
+      receiveArr = new Uint8Array(echo.length + tmp.length);
+      receiveArr.set(tmp);
+      receiveArr.set(echo, tmp.length);
+
+      if (receiveArr.length === 19740) {
+        console.log("Read status: ", result.status);
+        console.log("Received: ", receiveArr);
+        end = performance.now(); //Perfromance testing end
+        console.log(
+          `Full update execution time: ${Math.floor(end - start)} ms`
+        );
+        //  checkFull(fullNewImg, receiveArr);
+        receiveArr = new Uint8Array(); //zeroing the sum array
+      }
+      if (receiveArr.length === 2407) {
+        console.log("Read status: ", result.status);
+        console.log("Received: ", receiveArr);
+        end = performance.now(); //Perfromance testing end
+        console.log(
+          `Delta update execution time: ${Math.floor(end - start)} ms`
+        );
+        receiveArr = new Uint8Array(); //zeroing the sum array
+      }
       Listen(); //recursion
     });
   };
-
   ///////////////////////////////////////////////////////////////////
   //
   // This function allows for sending data to the connected
   // usb device. Data has to be of string type.
   //
   ///////////////////////////////////////////////////////////////////
-  const Send = (data) => {
+  const Send = async (data) => {
     if (!portRef.current) return;
     if (data.length === 0) return;
-    console.log("sending to serial:" + data.length);
-    console.log("sending to serial: [" + data + "]\n");
     const endpointOut =
       portRef.current.configuration.interfaces[0].alternate.endpoints[1]
         .endpointNumber;
     // //converting the data into to utf-8 format
-    // let view = new TextEncoder().encode(data);
+    // let view = new TextEncoder().encode(data); when sending a string
     //console.log(view);
     //portRef.current.transferOut(endpointOut, view);
-    portRef.current.transferOut(endpointOut, data);
+    portRef.current.transferOut(endpointOut, data).then((result) => {
+      console.log("Write status: ", result.status);
+    });
   };
 
   ///////////////////////////////////////////////////////////////////
@@ -108,44 +127,39 @@ export default function Home() {
   // passing the read firmware version as its body.
   ///////////////////////////////////////////////////////////////////
   const Do_delta_update = async (readVersion) => {
-    // let response = await fetch("./api/deltaupdate", {
-    //   method: "POST",
-    //   body: readVersion,
-    // });
-    // const result = await response.json();
-    // console.log(result.patch);
-    // Send(result.patch.data);
-    const t = [0, 0b01100100, 0b01101001, 0b01100110, 0b01100110, 0]; //"diff"
-    const start = performance.now(); //Perfromance testing
-    const a = Buffer.alloc(50000, "a");
-    let b = Buffer.from(a);
-    b.set(t, 100);
-    const patch = await diff({
-      oldD: a,
-      oldLength: a.length,
-      newD: b,
-      newLength: b.length,
+    start = performance.now(); //Perfromance testing start
+    const response = await fetch("./api/deltaupdate", {
+      method: "POST",
+      body: readVersion,
     });
-    Send(patch);
-    const end = performance.now(); //Perfromance testing
-    console.log("patch size: ", human_bytes(p.byteLength));
-    console.log(`Delta update execution time: ${Math.floor(end - start)} ms`);
+    let result = await response.json(); //returns array instead of typed array
+    result = new Uint8Array(result.patch.data);
+    console.log(result);
+    Send(result);
   };
 
-  const Do_full_update = async (input) => {
-    console.log(input);
+  const Do_full_update = (input) => {
     start = performance.now(); //Perfromance testing start
-    //let image = input.target.files[0];
     const reader = new FileReader();
     reader.readAsArrayBuffer(input); //read and store the image as arraybuffer
     reader.onload = function () {
-      console.log(reader);
       const view = new Uint8Array(reader.result);
-      console.log("view: ", view);
       Send(view);
     };
     reader.onerror = function () {
-      console.log(reader.error);
+      console.error(reader.error);
+    };
+  };
+
+  const checkFull = (writeRes, readRes) => {
+    console.log(writeRes);
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(writeRes); //read and store the image as arraybuffer
+    reader.onload = function () {
+      writeRes = new Uint8Array(reader.result);
+      if (Buffer.compare(writeRes, readRes) == 0)
+        console.log("Full update transfer integrity check passed");
+      else console.log("Full update transfer integrity check failed");
     };
   };
 
@@ -235,6 +249,7 @@ export default function Home() {
         <label>Select a new image:</label>
         <input type="file" onChange={(e) => setFullNewImg(e.target.files[0])} />
       </div>
+      <button onClick={() => checkFull(fullNewImg, receiveArr)}>Check</button>
     </>
   );
 }

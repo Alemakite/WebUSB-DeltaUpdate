@@ -18,10 +18,10 @@
     "@next/font": "13.1.1",
     "@prisma/client": "^4.10.1",
     "buffer": "^6.0.3",
+    "fs": "^0.0.1-security",
     "next": "13.1.1",
     "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "usb": "^2.9.0"
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.20.2",
