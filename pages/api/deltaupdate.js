@@ -6,7 +6,6 @@ let images = new Map([
   ["1.1", "blinky0/zephyr/zephyr.bin"],
   ["1.2", "blinky1/zephyr/zephyr.bin"],
 ]);
-
 //Request handler running bsdiff4 algorithm
 export default async function handler(req, res) {
   if (req.method != "POST") return res.end();
@@ -15,14 +14,15 @@ export default async function handler(req, res) {
   var version = req.body;
   var oldDir = resolve(process.cwd(), "images", images.get(version)); //get path to newest version of image
   var oldImg = readFileSync(oldDir.toString()); //to load and display the binary
+
+  //images.get(images.entries().next().value)
   //get newest image
   var newDir = resolve(
     process.cwd(),
     "images",
-    images.get(images.entries().next().value) //get the image with highest version
+    Array.from(images.values()).pop() //get the image with highest version
   );
-  var newImg = readFileSync(newDir);
-  console.log(newImg);
+  var newImg = readFileSync(newDir.toString());
 
   const bsdiff4 = await import("../../external/bsdiff4"); //importing the library
   const patch = await bsdiff4.diff({
@@ -31,17 +31,5 @@ export default async function handler(req, res) {
     newD: newImg,
     newLength: newImg.length,
   });
-  // const t = [0, 0b01100100, 0b01101001, 0b01100110, 0b01100110, 0]; //"diff"
-  // const a = Buffer.alloc(50000, "a");
-  // let b = Buffer.from(a);
-  // b.set(t, 100);
-  // const patch = await bsdiff4.diff({
-  //   oldD: a,
-  //   oldLength: a.length,
-  //   newD: b,
-  //   newLength: b.length,
-  // });
   return res.json({ patch });
-
-  //res.redirect to chain APIs(parameters?)?
 }
