@@ -1,6 +1,5 @@
 import Head from "next/head";
 import { useEffect, useState, useRef } from "react";
-//import { webusb } from "usb";
 import React from "react";
 import ReactDOM from "react-dom";
 import Table from "../components/alertTable";
@@ -13,6 +12,15 @@ const filters = [
 ];
 let start, end; //variables for performence testing
 let receiveArr, deltaLen, fullLen;
+
+let portRef = useRef(); //global object used to store and refer to a port on host
+
+//run only once per page load to check for existing permissions
+if (typeof window !== "undefined") {
+  let devices = await navigator.usb.getDevices({ filters: filters });
+  if (devices !== undefined) portRef.current = devices[0];
+  setNotifs((prev) => [...prev, { type: "Info", message: "Permission found" }]); //Adding an alert
+}
 export default function Home() {
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -20,18 +28,18 @@ export default function Home() {
   const [fullNewImg, setFullNewImg] = useState("");
   const [notifs, setNotifs] = useState([]);
 
-  let portRef = useRef(); //used to store and refer to a port on client's pc
   ///////////////////////////////////////////////////////////////////
-  //
   // This function allows for a prompt with avaiable usb devices to
   // pop up and to request connection with one of them.
-  //
   ///////////////////////////////////////////////////////////////////
-  const GetDevices = async () => {
+  const RequestDC = async () => {
     try {
-      let request = await navigator.usb.requestDevice({ filters: filters });
-      portRef.current = request;
-      //console.log(portRef.current);
+      if (portRef.current) {
+        setNotifs([]); //Zeroing alert table
+        return Connect();
+      }
+      let device = await navigator.usb.requestDevice({ filters: filters });
+      if (device !== undefined) portRef.current = device;
       setNotifs([]); //Zeroing alert table
       Connect();
     } catch (Error) {
@@ -43,9 +51,7 @@ export default function Home() {
     }
   };
   ///////////////////////////////////////////////////////////////////
-  //
   // This function allows for establising connection with an usb device.
-  //
   ///////////////////////////////////////////////////////////////////
   const Connect = async () => {
     try {
@@ -54,10 +60,10 @@ export default function Home() {
       if (portRef.current.configuration === null)
         await portRef.current.selectConfiguration(1);
       await portRef.current.claimInterface(0);
+
       setProductName(portRef.current.productName);
       setManufacturer(portRef.current.manufacturerName);
       setSerialNumber(portRef.current.serialNumber);
-
       setNotifs((prev) => [...prev, { type: "Info", message: "Connected" }]); //Adding an alert
       Listen(); //start listening for incoming transfers
     } catch (error) {
@@ -66,18 +72,18 @@ export default function Home() {
         ...prev,
         { type: "Error", message: "ERROR - failed to claim interface" },
       ]); //Adding an alert
-      //console.error("ERROR - failed to claim interface");
     }
   };
   ///////////////////////////////////////////////////////////////////
-  //
   // A function for listening for incoming WebUSB tranfers.
   // This is a recursive function as it has to always listen for
-  // incoming transfers. It is in effect a text receiving function.
-  //
+  // incoming transfers.
   ///////////////////////////////////////////////////////////////////
   let Listen = async () => {
-    if (!portRef.current) return;
+    if (!portRef.current) {
+      portRef.current.close();
+      return;
+    }
     const endpointIn =
       portRef.current.configuration.interfaces[0].alternate.endpoints[0]
         .endpointNumber;
@@ -90,35 +96,47 @@ export default function Home() {
 
       if (receiveArr.length === fullLen) {
         end = performance.now(); //Perfromance testing end
-        console.log("Read status: ", result.status);
-        console.log("Received: ", receiveArr);
-        console.log(
-          `Full update execution time: ${Math.floor(end - start)} ms`
-        );
+        setNotifs((prev) => [
+          ...prev,
+          {
+            type: "Info",
+            message: `Full update execution time: ${Math.floor(
+              end - start
+            )} ms`,
+          },
+        ]); //Adding an alert
         setNotifs((prev) => [
           ...prev,
           { type: "Transfer", message: `Received ${fullLen} bytes ` },
         ]); //Adding an alert
+
         //  checkFull(fullNewImg, receiveArr);
         receiveArr = new Uint8Array(); //zeroing the sum array
       }
       if (receiveArr.length === deltaLen) {
         end = performance.now(); //Perfromance testing end
-        // console.log("Read status: ", result.status);
-        // console.log("Received: ", receiveArr);
-        // console.log(
-        //   `Delta update execution time: ${Math.floor(end - start)} ms`
-        // );
+        setNotifs((prev) => [
+          ...prev,
+          {
+            type: "Info",
+            message: `Delta update execution time: ${Math.floor(
+              end - start
+            )} ms`,
+          },
+        ]); //Adding an alert
+        setNotifs((prev) => [
+          ...prev,
+          { type: "Transfer", message: `Received ${deltaLen} bytes ` },
+        ]); //Adding an alert
         receiveArr = new Uint8Array(); //zeroing the sum array
       }
       Listen(); //recursion
     });
   };
   ///////////////////////////////////////////////////////////////////
-  //
   // This function allows for sending data to the connected
-  // usb device. Data has to be of string type.
-  //
+  // usb device. In order to be properly received, data has to be in
+  // uint8array type.
   ///////////////////////////////////////////////////////////////////
   const Send = async (data) => {
     if (!portRef.current) return;
@@ -126,13 +144,11 @@ export default function Home() {
     const endpointOut =
       portRef.current.configuration.interfaces[0].alternate.endpoints[1]
         .endpointNumber;
-    // //converting the data into to utf-8 format
-    // let view = new TextEncoder().encode(data); when sending a string
-    //console.log(view);
-    //portRef.current.transferOut(endpointOut, view);
     portRef.current.transferOut(endpointOut, data).then((result) => {
-      //console.log("Write status: ", result.status);
-      setNotifs((prev) => [...prev, { type: "Transfer", message: "Sent" }]); //Adding an alert
+      setNotifs((prev) => [
+        ...prev,
+        { type: "Transfer", message: `Data sent: ${result.status}` },
+      ]); //Adding an alert
     });
   };
 
@@ -220,7 +236,7 @@ export default function Home() {
       >
         <button
           id="connect"
-          onClick={GetDevices}
+          onClick={RequestDC}
           style={{ visibility: "visible", maxWidth: "max-content" }}
         >
           Connect To WebUSB Device

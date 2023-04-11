@@ -1,10 +1,6 @@
 {
   "name": "deltawebsub",
-  "jest": {
-    "transformIgnorePatterns": [
-      "node_modules/(?!@ngrx|(?!deck.gl)|ng-dynamic)"
-    ]
-  },
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "scripts": {
