@@ -12,15 +12,7 @@ const filters = [
 ];
 let start, end; //variables for performence testing
 let receiveArr, deltaLen, fullLen;
-
-let portRef = useRef(); //global object used to store and refer to a port on host
-
-//run only once per page load to check for existing permissions
-if (typeof window !== "undefined") {
-  let devices = await navigator.usb.getDevices({ filters: filters });
-  if (devices !== undefined) portRef.current = devices[0];
-  setNotifs((prev) => [...prev, { type: "Info", message: "Permission found" }]); //Adding an alert
-}
+let renderCount = 0;
 export default function Home() {
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -28,6 +20,22 @@ export default function Home() {
   const [fullNewImg, setFullNewImg] = useState("");
   const [notifs, setNotifs] = useState([]);
 
+  let portRef = useRef(); //global object used to store and refer to a port on host
+
+  //run only once per page load to check for existing permissions
+  const GetDC = async () => {
+    const devices = await navigator.usb.getDevices({ filters: filters });
+    if (devices !== undefined) {
+      portRef.current = devices[0];
+      setNotifs((prev) => [
+        ...prev,
+        { type: "Info", message: "Permission found" },
+      ]);
+    }
+  };
+  useEffect(() => {
+    GetDC();
+  }, []);
   ///////////////////////////////////////////////////////////////////
   // This function allows for a prompt with avaiable usb devices to
   // pop up and to request connection with one of them.
@@ -151,7 +159,6 @@ export default function Home() {
       ]); //Adding an alert
     });
   };
-
   ///////////////////////////////////////////////////////////////////
   //
   // This function sends a POST message to the API method in deltaupdate.js
@@ -168,7 +175,6 @@ export default function Home() {
     deltaLen = result.length;
     Send(result);
   };
-
   const Do_full_update = (input) => {
     start = performance.now(); //Perfromance testing start
     const reader = new FileReader();
@@ -186,7 +192,6 @@ export default function Home() {
       console.error(reader.error);
     };
   };
-
   const checkFull = (writeRes, readRes) => {
     console.log(writeRes);
     const reader = new FileReader();
@@ -199,17 +204,6 @@ export default function Home() {
     };
   };
 
-  ///////////////////////////////////////////////////////////////////
-  // A helper function that simply converts a number of bytes and
-  // returns it in more readable format such as KB or MB.
-  ///////////////////////////////////////////////////////////////////
-  function human_bytes(n) {
-    //return the number of bytes 'n' in more human readable form
-    if (n < 1024) return "%i B" % n;
-    k = (n - 1) / 1024 + 1;
-    if (k < 1024) return "%i KB" % k;
-    return "%.2f MB" % (float(n) / 2 ** 20);
-  }
   //Rendered wabpage contents/ DOM structure
   return (
     <>
