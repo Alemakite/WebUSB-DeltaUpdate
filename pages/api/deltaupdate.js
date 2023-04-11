@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   );
   var newImg = readFileSync(newDir.toString());
 
-  const bsdiff4 = await import("../../bsdiffJS/bsdiff4"); //importing the library
+  const bsdiff4 = await import("../../bsdiffJS/bsdiff4.cjs"); //importing the library
   const patch = await bsdiff4.diff({
     oldD: oldImg,
     oldLength: oldImg.length,
