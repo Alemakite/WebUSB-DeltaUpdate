@@ -3,7 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import React from "react";
 import ReactDOM from "react-dom";
 import Table from "../components/alertTable";
-const { Buffer } = require("buffer");
+import { Buffer } from "node:buffer";
+
 //filters so that we don't detect unnecessary usb devices in a system
 const filters = [
   { vendorId: 0x2fe3, productId: 0x0100 },
@@ -11,7 +12,8 @@ const filters = [
   { vendorId: 0x8086, productId: 0xf8a1 },
 ];
 let start, end; //variables for performence testing
-let receiveArr, deltaLen, fullLen;
+let receiveArr, deltaLen, fullLen; //variables used to store received data, and sent lengths
+
 export default function Home() {
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -21,7 +23,10 @@ export default function Home() {
 
   let portRef = useRef(); //global object used to store and refer to a port on host
 
-  //run only once per page load to check for existing permissions
+  ///////////////////////////////////////////////////////////////////
+  // This function allows to check for existing permissions to
+  //access any detected USB device.
+  ///////////////////////////////////////////////////////////////////
   const GetDC = async () => {
     const devices = await navigator.usb.getDevices({ filters: filters });
     if (devices !== undefined) {
@@ -32,9 +37,11 @@ export default function Home() {
       ]);
     }
   };
+  //run GetDC() only once per page load
   useEffect(() => {
     GetDC();
   }, []);
+
   ///////////////////////////////////////////////////////////////////
   // This function allows for a prompt with avaiable usb devices to
   // pop up and to request connection with one of them.
@@ -53,7 +60,7 @@ export default function Home() {
       setNotifs((prev) => [
         ...prev,
         { type: "Error", message: "ERROR - device not selected" },
-      ]); //Adding an alert
+      ]);
       console.error(Error);
     }
   };
@@ -71,14 +78,14 @@ export default function Home() {
       setProductName(portRef.current.productName);
       setManufacturer(portRef.current.manufacturerName);
       setSerialNumber(portRef.current.serialNumber);
-      setNotifs((prev) => [...prev, { type: "Info", message: "Connected" }]); //Adding an alert
+      setNotifs((prev) => [...prev, { type: "Info", message: "Connected" }]);
       Listen(); //start listening for incoming transfers
     } catch (error) {
       portRef.current.close();
       setNotifs((prev) => [
         ...prev,
         { type: "Error", message: "ERROR - failed to claim interface" },
-      ]); //Adding an alert
+      ]);
     }
   };
   ///////////////////////////////////////////////////////////////////
@@ -111,11 +118,11 @@ export default function Home() {
               end - start
             )} ms`,
           },
-        ]); //Adding an alert
+        ]);
         setNotifs((prev) => [
           ...prev,
           { type: "Transfer", message: `Received ${fullLen} bytes ` },
-        ]); //Adding an alert
+        ]);
 
         //  checkFull(fullNewImg, receiveArr);
         receiveArr = new Uint8Array(); //zeroing the sum array
@@ -130,11 +137,11 @@ export default function Home() {
               end - start
             )} ms`,
           },
-        ]); //Adding an alert
+        ]);
         setNotifs((prev) => [
           ...prev,
           { type: "Transfer", message: `Received ${deltaLen} bytes ` },
-        ]); //Adding an alert
+        ]);
         receiveArr = new Uint8Array(); //zeroing the sum array
       }
       Listen(); //recursion
@@ -155,7 +162,7 @@ export default function Home() {
       setNotifs((prev) => [
         ...prev,
         { type: "Transfer", message: `Data sent: ${result.status}` },
-      ]); //Adding an alert
+      ]);
     });
   };
   ///////////////////////////////////////////////////////////////////
@@ -185,7 +192,7 @@ export default function Home() {
       setNotifs((prev) => [
         ...prev,
         { type: "Transfer", message: "Sending full" },
-      ]); //Adding an alert
+      ]);
     };
     reader.onerror = function () {
       console.error(reader.error);
@@ -287,7 +294,7 @@ export default function Home() {
                   type: "Error",
                   message: "Cannot do full update without any image selected",
                 },
-              ]); //Adding an alert
+              ]);
             }
           }}
         >
@@ -302,7 +309,7 @@ export default function Home() {
               setNotifs((prev) => [
                 ...prev,
                 { type: "Error", message: "Image not selected" },
-              ]); //Adding an alert
+              ]);
             }
           }}
         />
