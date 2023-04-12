@@ -1,6 +1,6 @@
 const { resolve, join } = require("path");
 const { readFileSync } = require("fs"); //filesystem
-
+import { diff } from "bsdiffjs";
 //strucutre for storing image binaries along with their respective versions
 let images = new Map([
   ["1.1", "blinky0/zephyr/zephyr.bin"],
@@ -14,7 +14,6 @@ export default async function handler(req, res) {
   var version = req.body;
   var oldDir = resolve(process.cwd(), "images", images.get(version)); //get path to newest version of image
   var oldImg = readFileSync(oldDir.toString()); //to load and display the binary
-
   //images.get(images.entries().next().value)
   //get newest image
   var newDir = resolve(
@@ -23,13 +22,6 @@ export default async function handler(req, res) {
     Array.from(images.values()).pop() //get the image with highest version
   );
   var newImg = readFileSync(newDir.toString());
-
-  const bsdiff4 = await import("../../bsdiffJS/bsdiff4.cjs"); //importing the library
-  const patch = await bsdiff4.diff({
-    oldD: oldImg,
-    oldLength: oldImg.length,
-    newD: newImg,
-    newLength: newImg.length,
-  });
+  const patch = await diff(oldImg, newImg);
   return res.json({ patch });
 }

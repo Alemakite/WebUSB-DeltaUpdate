@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import React from "react";
 import ReactDOM from "react-dom";
 import Table from "../components/alertTable";
-import { Buffer } from "node:buffer";
+import { Buffer } from "buffer";
 
 //filters so that we don't detect unnecessary usb devices in a system
 const filters = [
@@ -161,7 +161,10 @@ export default function Home() {
     portRef.current.transferOut(endpointOut, data).then((result) => {
       setNotifs((prev) => [
         ...prev,
-        { type: "Transfer", message: `Data sent: ${result.status}` },
+        {
+          type: "Transfer",
+          message: `Data sent: ${result.status} size: ${result.bytesWritten} bytes`,
+        },
       ]);
     });
   };
