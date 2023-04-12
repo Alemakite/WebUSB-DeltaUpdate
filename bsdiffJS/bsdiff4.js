@@ -1,12 +1,12 @@
-const { Buffer } = require("node:buffer");
-const util = require("./bsdiff4util.cjs");
-const SnappyJS = require("snappyjs");
+import { Buffer } from "node:buffer";
+import do_diff from "./bsdiff4util.js";
+import SnappyJS from "snappyjs";
 
 const MAGIC = "BSDIFF40"; //8bytes
 ///////////////////////////////////////////////////////////////////
 // A function that writes a BSDIFF4-format patch to ArrayBuffer obj
 ///////////////////////////////////////////////////////////////////
-async function write_patch({ controlArrays, bdiff, bextra }) {
+export async function writePatch({ controlArrays, bdiff, bextra }) {
   try {
     // Compress each block, compress() returns either arraybuffer or uint8 when passed in.
     // Control arrays is casted to int32array to facilitate having signed bytes object.
@@ -42,7 +42,7 @@ async function write_patch({ controlArrays, bdiff, bextra }) {
 ///////////////////////////////////////////////////////////////////
 // A function that reads a BSDIFF4 patch from ArrayBuffer object
 ///////////////////////////////////////////////////////////////////
-async function read_patch(patch) {
+export async function readPatch(patch) {
   try {
     //magic check
     const magic = patch.toString("utf8", 0, 8); //read and decode magic
@@ -85,15 +85,15 @@ async function read_patch(patch) {
 // A function that returns a BSDIFF4-format patch
 // (from src_bytes to dst_bytes) as Buffer.
 ///////////////////////////////////////////////////////////////////
-async function diff(oldData, newData) {
+export async function diff(oldData, newData) {
   try {
-    const delta = await util.doDiff({
+    const delta = await do_diff({
       oldData: oldData,
       oldDataLength: oldData.length,
       newData: newData,
       newDataLength: newData.length,
     });
-    const patch = await write_patch({
+    const patch = await writePatch({
       controlArrays: delta[0],
       bdiff: delta[1],
       bextra: delta[2],
@@ -107,22 +107,16 @@ async function diff(oldData, newData) {
 ///////////////////////////////////////////////////////////////////
 // A function that only calculates delta bewteen two files.
 ///////////////////////////////////////////////////////////////////
-async function diff_only(oldData, newData) {
+export async function diffOnly(oldData, newData) {
   try {
-    return (delta = await util.doDiff({
-      oldData: oldData,
-      oldDataLength: oldData.length,
-      newData: newData,
-      newDataLength: newData.length,
-    }));
+    const delta = await do_diff(
+      oldData,
+      oldData.length,
+      newData,
+      newData.length
+    );
+    return delta;
   } catch (Error) {
     console.error(Error);
   }
 }
-
-module.exports = {
-  writePatch: write_patch,
-  readPatch: read_patch,
-  diff: diff,
-  diffOnly: diff_only,
-};

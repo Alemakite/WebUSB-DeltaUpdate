@@ -1,11 +1,14 @@
 {
   "name": "bsdiffjs",
   "jest": {
-    "verbose": true
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    }
   },
   "version": "1.0.0",
   "description": "A JavaScript interpretation of Colin Percival's BSDiff4, based on Ilan Schnell's bsdiff4. ",
-  "main": "bsdiff4.cjs",
+  "main": "bsdiff4.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
@@ -19,5 +22,10 @@
   "dependencies": {
     "jest": "^29.5.0",
     "snappyjs": "^0.7.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.21.4",
+    "@babel/plugin-transform-modules-commonjs": "^7.21.2",
+    "@babel/preset-env": "^7.21.4"
   }
 }

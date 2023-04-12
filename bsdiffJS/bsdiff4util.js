@@ -188,12 +188,7 @@ function search(I, oldData, oldSize, newData, newSize, st, en, pos) {
   }
 }
 
-///////////////////////////////////////////////////////////////////
-// A function that performs a diff between the two data streams and
-// returns an array containing the control, diff and extra blocks
-// that bsdiff produces.
-///////////////////////////////////////////////////////////////////
-exports.doDiff = async function do_diff(
+export default async function do_diff(
   oldData,
   oldDataLength,
   newData,
@@ -350,4 +345,4 @@ exports.doDiff = async function do_diff(
   } catch (Error) {
     console.error(Error);
   }
-};
+}
