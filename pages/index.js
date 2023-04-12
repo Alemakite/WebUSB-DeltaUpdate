@@ -12,7 +12,6 @@ const filters = [
 ];
 let start, end; //variables for performence testing
 let receiveArr, deltaLen, fullLen;
-let renderCount = 0;
 export default function Home() {
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");

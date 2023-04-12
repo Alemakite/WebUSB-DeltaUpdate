@@ -5,8 +5,7 @@
   },
   "version": "1.0.0",
   "description": "A JavaScript interpretation of Colin Percival's BSDiff4, based on Ilan Schnell's bsdiff4. ",
-  "main": "bsdiff4.js",
-  "type": "module",
+  "main": "bsdiff4.cjs",
   "scripts": {
     "test": "jest"
   },
