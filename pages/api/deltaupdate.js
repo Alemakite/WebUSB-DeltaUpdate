@@ -5,7 +5,7 @@ import { diff } from "bsdiffjs";
 //strucutre for storing image binaries along with their respective versions
 let images = new Map([
   ["1.1", "blinky0/zephyr.bin"],
-  ["1.2", "blinky1/zephyr.bin"],
+  ["1.2.0", "blinky1/zephyr.bin"],
 ]);
 
 //Request handler running bsdiff4 algorithm

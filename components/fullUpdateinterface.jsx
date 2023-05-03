@@ -30,12 +30,12 @@ function DoFullUpdate({ addNotif, portRef }) {
 
       await webUSBlib.Send({
         addNotif: addNotif,
-        portRef: portRef.current,
+        device: portRef.current,
         data: view,
       });
       await webUSBlib.Listen({
         addNotif: addNotif,
-        portRef: portRef.current,
+        device: portRef.current,
         buffer: receiveArr,
         size: view.length,
       });

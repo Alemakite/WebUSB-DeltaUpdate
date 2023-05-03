@@ -10,7 +10,7 @@ import DoFullUpdate from "../components/fullUpdateinterface";
 
 export default function Home() {
   const [notifs, setNotifs] = useState([]);
-  //const [portRef, setportRef] = useState({ current: null });
+
   let portRef = useRef(undefined); //global object used to store and refer to a port on host
 
   const addNotif = (type, message) => {
@@ -45,6 +45,7 @@ export default function Home() {
     },
   };
   //Rendered wabpage contents/ DOM structure
+
   return (
     <>
       <Head>
@@ -67,7 +68,6 @@ export default function Home() {
         </div>
         <Table notifs={notifs} />
       </div>
-
       <div style={styles1.container}>
         <DoDeltaUpdate portRef={portRef} addNotif={addNotif} />
       </div>
@@ -76,7 +76,17 @@ export default function Home() {
           Press Read Firmware to read information on the app residing in the 2nd
           slot of the device
         </h4>
-        <button>Read Firmware</button>
+        <button
+          onClick={async () => {
+            webUSBlib.ReadFW({
+              addNotif: addNotif,
+              device: portRef.current,
+              imageID: 1,
+            });
+          }}
+        >
+          Read Firmware
+        </button>
       </div>
       <div style={styles2.container}>
         <DoFullUpdate portRef={portRef} addNotif={addNotif} />

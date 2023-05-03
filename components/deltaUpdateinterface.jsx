@@ -12,8 +12,15 @@ function DoDeltaUpdate({ addNotif, portRef }) {
     },
   };
 
-  const DeltaUpdate = async (readVersion) => {
+  const DeltaUpdate = async () => {
     start = performance.now(); //Perfromance testing start
+
+    const readVersion = await webUSBlib.ReadFW({
+      addNotif: addNotif,
+      device: portRef.current,
+    });
+    console.log(readVersion);
+
     const response = await fetch("/api/deltaupdate", {
       method: "POST",
       body: readVersion,
@@ -24,21 +31,23 @@ function DoDeltaUpdate({ addNotif, portRef }) {
 
     await webUSBlib.Send({
       addNotif: addNotif,
-      portRef: portRef.current,
+      device: portRef.current,
       data: result,
     });
     await webUSBlib.Listen({
       addNotif: addNotif,
-      portRef: portRef.current,
+      device: portRef.current,
       buffer: receiveArr,
       size: result.length,
     });
+
     end = performance.now(); //Perfromance testing end
+    addNotif("Transfer", `Echo received in ${end - start} ms`);
   };
 
   return (
     <div style={DeltaStyles.container}>
-      <button onClick={() => DeltaUpdate("1.1")}>Delta Update</button>
+      <button onClick={() => DeltaUpdate()}>Delta Update</button>
     </div>
   );
 }

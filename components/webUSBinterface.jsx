@@ -28,7 +28,7 @@ function WebUSB({ portRef, addNotif }) {
 
   const Connect = async () => {
     portRef.current = await webUSBlib.RequestDC({
-      portRef: portRef.current,
+      device: portRef.current,
       addNotif: addNotif,
     });
     if (portRef.current) setDCInfo();
@@ -55,7 +55,7 @@ function WebUSB({ portRef, addNotif }) {
           onClick={() => {
             webUSBlib.ForgetDC({
               addNotif: addNotif,
-              portRef: portRef.current,
+              device: portRef.current,
             });
             resetDCInfo();
             window.location.reload();
