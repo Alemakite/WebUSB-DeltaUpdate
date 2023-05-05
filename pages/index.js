@@ -23,11 +23,11 @@ export default function Home() {
     setNotifs((previous) => [...previous, { type: type, message: message }]);
   };
 
+  async function getDC() {
+    portRef.current = await webUSBlib.GetDC({ addNotif: addNotif });
+  }
   //run GetDC() only once per page load
   useEffect(() => {
-    async function getDC() {
-      portRef.current = await webUSBlib.GetDC({ addNotif: addNotif });
-    }
     getDC();
   }, []);
 
