@@ -18,8 +18,8 @@ function DoDeltaUpdate({ addNotif, portRef }) {
     const readVersion = await webUSBlib.ReadFW({
       addNotif: addNotif,
       device: portRef.current,
+      imageID: 2,
     });
-    console.log(readVersion);
 
     const response = await fetch("/api/deltaupdate", {
       method: "POST",
@@ -42,7 +42,7 @@ function DoDeltaUpdate({ addNotif, portRef }) {
     });
 
     //end = performance.now(); //Perfromance testing end
-    addNotif("Transfer", `Echo received in ${end - start} ms`);
+    //addNotif("Transfer", `Echo received in ${end - start} ms`);
   };
 
   return (

@@ -86,7 +86,6 @@ function WebUSB({ portRef, addNotif }) {
             webUSBlib.ReadFW({
               addNotif: addNotif,
               device: portRef.current,
-              imageID: 1,
             });
           }}
         >

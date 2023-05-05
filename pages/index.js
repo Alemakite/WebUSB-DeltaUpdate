@@ -11,8 +11,14 @@ import DoFullUpdate from "../components/fullUpdateinterface";
 export default function Home() {
   const [notifs, setNotifs] = useState([]);
 
-  let portRef = useRef(undefined); //global object used to store and refer to a port on host
+  //global object used to store and refer to the connected device
+  let portRef = useRef(undefined);
 
+  ///////////////////////////////////////////////////////////////////
+  // This function allows for adding a notification to the
+  //  notification board. It can be passed to a function or component
+  //  as a parameter/prop enabling it to be called from it.
+  ///////////////////////////////////////////////////////////////////
   const addNotif = (type, message) => {
     setNotifs((previous) => [...previous, { type: type, message: message }]);
   };
@@ -25,20 +31,7 @@ export default function Home() {
     getDC();
   }, []);
 
-  const checkFull = (writeRes, readRes) => {
-    console.log(writeRes);
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(writeRes); //read and store the image as arraybuffer
-    reader.onload = function () {
-      writeRes = new Uint8Array(reader.result);
-      if (Buffer.compare(writeRes, readRes) == 0)
-        console.log("Full update transfer integrity check passed");
-      else console.log("Full update transfer integrity check failed");
-    };
-  };
-
   //Rendered wabpage contents/ DOM structure
-
   return (
     <>
       <Head>
