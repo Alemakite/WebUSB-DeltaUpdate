@@ -1,6 +1,6 @@
 //Notification component to be displayed in Table
 const Notif = ({ notif }) => {
-  let color = "";
+  let color;
   switch (notif.type) {
     case "Info":
       color = "lightblue";

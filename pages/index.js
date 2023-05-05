@@ -1,12 +1,11 @@
 import Head from "next/head";
 import { useEffect, useState, useRef } from "react";
 import React from "react";
-import Board from "../components/notifsBoard";
-import { Buffer } from "buffer";
 import * as webUSBlib from "../lib/webUSBlib";
 import WebUSBInferface from "../components/webUSBinterface";
 import DoDeltaUpdate from "../components/deltaUpdateinterface";
 import DoFullUpdate from "../components/fullUpdateinterface";
+import Board from "../components/notifBoard";
 
 export default function Home() {
   const [notifs, setNotifs] = useState([]);
@@ -43,10 +42,6 @@ export default function Home() {
       <h4>
         This is a proof-of-concept of a web app serving delta firmware updates
         through webUSB connection to a client's usb devices.
-      </h4>
-      <h4>
-        For the usb device to apply the received update, it needs to have a
-        WebUSB handler program in either of its image slots.
       </h4>
       <div style={{ display: "flex", flexDirection: "row", gap: 100 }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
