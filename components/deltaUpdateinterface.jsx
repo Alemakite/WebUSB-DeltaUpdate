@@ -56,33 +56,32 @@ function DoDeltaUpdate({ addNotif, portRef }) {
     });
 
     let result = await response.json(); //returns array instead of typed array
-    result = new Uint8Array(result.patch.data);
-
+    let resultPatch = new Uint8Array(result.patch.data);
+    addNotif("Info", `Target size: ${result.targetSize}`);
+    addNotif("Info", `Patch size: ${result.patchSize}`);
+    addNotif("Info", `Patch to Target ratio: ${result.ptRatio}`);
     await webUSBlib.Send({
       addNotif: addNotif,
       device: portRef.current,
-      data: result,
+      data: resultPatch,
     });
     await webUSBlib.Listen({
       addNotif: addNotif,
       device: portRef.current,
       buffer: receiveArr,
-      size: result.length,
+      size: resultPatch.length,
     });
 
     //end = performance.now(); //Perfromance testing end
     //addNotif("Transfer", `Echo received in ${end - start} ms`);
   };
+
   return (
     <div style={DeltaStyles.container}>
       <h4>
         Press Delta Update to perform a delta update of the linked device.
       </h4>
-
       <button onClick={() => DeltaUpdate()}>Delta Update</button>
-      <button onClick={() => DeltaUpdateTest("1.1.0")}>
-        Delta Update Test
-      </button>
     </div>
   );
 }

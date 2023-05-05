@@ -22,7 +22,7 @@ function DoFullUpdate({ addNotif, portRef }) {
       addNotif("Error", "No file chosen for full update");
       return;
     }
-    start = performance.now(); //Perfromance testing start
+    //start = performance.now(); //Perfromance testing start
     const reader = new FileReader();
     reader.readAsArrayBuffer(input); //read and store the image as arraybuffer
     reader.onload = async function () {

@@ -1,11 +1,11 @@
-const { resolve, join } = require("path");
+const { resolve } = require("path");
 const { readFileSync } = require("fs"); //filesystem
 import { diff } from "bsdiffjs";
 
 //strucutre for storing image binaries along with their respective versions
 let images = new Map([
-  ["1.1.0", "blinky0/zephyr.bin"],
-  ["1.2.0", "blinky1/zephyr.bin"],
+  ["1.0.0", "blinky1signed/zephyr.signed.bin"],
+  ["1.2.0", "blinky0signed/zephyr.signed.bin"],
 ]);
 
 //Request handler running bsdiff4 algorithm
@@ -29,12 +29,8 @@ export default async function handler(req, res) {
   var newImg = readFileSync(newDir.toString());
 
   const patch = await diff(oldImg, newImg);
-  console.log(oldImg.byteLength);
-  console.log(patch.byteLength);
-  console.log(
-    "P/T ratio:",
-    +((patch.byteLength / oldImg.byteLength) * 100).toFixed(2),
-    "%"
-  );
-  return res.json({ patch });
+  const targetSize = oldImg.byteLength;
+  const patchSize = patch.byteLength;
+  const ptRatio = +((patch.byteLength / oldImg.byteLength) * 100).toFixed(2);
+  return res.json({ patch, targetSize, patchSize, ptRatio });
 }
