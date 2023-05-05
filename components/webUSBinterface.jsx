@@ -76,6 +76,23 @@ function WebUSB({ portRef, addNotif }) {
         <span style={CharsStyles.container}>Serial Number:</span>
         {serialNumber}
       </div>
+      <div style={{ display: portRef.current?.opened ? "block" : "none" }}>
+        <h4>
+          Press Read Firmware to read information on the app residing in the 2nd
+          slot of the device
+        </h4>
+        <button
+          onClick={async () => {
+            webUSBlib.ReadFW({
+              addNotif: addNotif,
+              device: portRef.current,
+              imageID: 1,
+            });
+          }}
+        >
+          Read Firmware
+        </button>
+      </div>
     </>
   );
 }

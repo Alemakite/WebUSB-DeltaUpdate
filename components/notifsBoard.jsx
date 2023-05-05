@@ -1,6 +1,6 @@
 import Notif from "./notif";
 
-const Table = ({ notifs }) => {
+const Board = ({ notifs }) => {
   if (notifs.length < 1) return;
 
   return (
@@ -27,4 +27,4 @@ const styles = {
   },
 };
 
-export default Table;
+export default Board;

@@ -13,7 +13,7 @@ function DoDeltaUpdate({ addNotif, portRef }) {
   };
 
   const DeltaUpdate = async () => {
-    start = performance.now(); //Perfromance testing start
+    //start = performance.now(); //Perfromance testing start
 
     const readVersion = await webUSBlib.ReadFW({
       addNotif: addNotif,
@@ -41,12 +41,16 @@ function DoDeltaUpdate({ addNotif, portRef }) {
       size: result.length,
     });
 
-    end = performance.now(); //Perfromance testing end
+    //end = performance.now(); //Perfromance testing end
     addNotif("Transfer", `Echo received in ${end - start} ms`);
   };
 
   return (
     <div style={DeltaStyles.container}>
+      <h4>
+        Press Delta Update to perform a delta update of the linked device.
+      </h4>
+
       <button onClick={() => DeltaUpdate()}>Delta Update</button>
     </div>
   );

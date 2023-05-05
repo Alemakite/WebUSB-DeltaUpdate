@@ -53,19 +53,26 @@ function DoFullUpdate({ addNotif, portRef }) {
   return (
     <div style={FullStyles.container}>
       <h4>
-        Press Full Update to upload the selected image (file) to the connected
+        Press Full Update to upload the chosen image (file) to the connected
         device
       </h4>
-      <label>
-        <input
-          type="file"
-          onChange={(file) => {
-            SelectFile(file);
-          }}
-        />
-      </label>
-      <div style={{ marginTop: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          marginTop: 10,
+          gap: 40,
+        }}
+      >
         <button onClick={() => FullUpdate(fullNewImg)}>Full Update</button>
+        <label>
+          <input
+            type="file"
+            onChange={(file) => {
+              SelectFile(file);
+            }}
+          />
+        </label>
       </div>
     </div>
   );
