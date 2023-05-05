@@ -4,7 +4,7 @@ import { diff } from "bsdiffjs";
 
 //strucutre for storing image binaries along with their respective versions
 let images = new Map([
-  ["1.1", "blinky0/zephyr.bin"],
+  ["1.1.0", "blinky0/zephyr.bin"],
   ["1.2.0", "blinky1/zephyr.bin"],
 ]);
 
@@ -17,6 +17,9 @@ export default async function handler(req, res) {
   var oldDir = resolve(process.cwd(), "images", images.get(version)); //get path to newest version of image
   var oldImg = readFileSync(oldDir.toString()); //to load and display the binary
 
+  // if (version >= Array.from(images.keys()).pop()) {
+  //   return -2;
+  // }
   //get newest image
   var newDir = resolve(
     process.cwd(),
@@ -26,6 +29,12 @@ export default async function handler(req, res) {
   var newImg = readFileSync(newDir.toString());
 
   const patch = await diff(oldImg, newImg);
-
+  console.log(oldImg.byteLength);
+  console.log(patch.byteLength);
+  console.log(
+    "P/T ratio:",
+    +((patch.byteLength / oldImg.byteLength) * 100).toFixed(2),
+    "%"
+  );
   return res.json({ patch });
 }

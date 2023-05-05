@@ -67,7 +67,6 @@ function WebUSB({ portRef, addNotif }) {
           Forget Device
         </button>
       </div>
-
       <div style={styles.container}>
         <span style={CharsStyles.container}>Product Name:</span>
         {productName}
@@ -86,6 +85,7 @@ function WebUSB({ portRef, addNotif }) {
             webUSBlib.ReadFW({
               addNotif: addNotif,
               device: portRef.current,
+              imageID: 1,
             });
           }}
         >
